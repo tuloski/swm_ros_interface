@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(swm_interface)
+project(swm_ros_interface)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -123,7 +123,11 @@ include_directories(
 #   src/${PROJECT_NAME}/uav_sim.cpp
 # )
 
-include_directories( /home/jcacace/External_SW/ubx_robotscenegraph/examples/zyre/ )
+include_directories( 
+  /home/jcacace/External_SW/ubx_robotscenegraph/examples/zyre/
+  ${catkin_INCLUDE_DIRS}
+  include
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -131,11 +135,11 @@ include_directories( /home/jcacace/External_SW/ubx_robotscenegraph/examples/zyre
 # add_dependencies(uav_sim ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(swm_interface src/swm_interface.cpp)
+add_executable(swm_ros_interface src/swm_ros_interface.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-#add_dependencies(swm_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(swm_ros_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} /usr/local/lib/libswmzyre.so ${catkin_LIBRARIES} )
