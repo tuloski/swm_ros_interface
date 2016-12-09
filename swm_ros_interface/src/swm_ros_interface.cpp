@@ -11,7 +11,6 @@ char* str2char( string str ) {
 
 SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
-	rate = 5;
 	counter_print = 0;
 	
 	if (_nh.hasParam("/swm_interfce/pub/geopose")){
@@ -21,9 +20,13 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	if (_nh.hasParam("/swm_interfce/sub/bg_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
-		publishers.push_back("/bg/geopose");
+		publishers.push_back(BG_GEOPOSE);
+		rate_publishers.push_back(10);	//rate in Hz at which we want to read from SWM
+		counter_publishers.push_back(0);
 	} else {
 	}
+
+	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
 	// SWM
 	ns = ros::this_node::getNamespace();
@@ -97,12 +100,18 @@ void SwmRosInterfaceNodeClass::loop_handle()
 		counter_print++;
 		for (int i=0; i<publishers.size(); i++){
 			
-			//Switch funziona con le stringhe??
-			if(publishers[i] == "/bg/geopose" ) {			
-				//case "/bg/geopose":
-				//TODO poll SWM (we wait to have the function for the full pose)
-				//TODO publish topic
-			}					
+			counter_publishers[i]++;
+
+			switch (publishers[i]){
+				case BG_GEOPOSE:
+					if (counter_publishers[i] >= rate/rate_publishers[i]){
+						//TODO poll SWM (we wait to have the function for the full pose)
+						//TODO publish topic
+					}
+					break;
+			}
+
+							
 		}
 	
 		//---Non mi è molto chiara questa parte!! Di che tipo è srv_query?

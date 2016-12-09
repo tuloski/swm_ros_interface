@@ -23,6 +23,11 @@ extern "C" {
 
 using namespace std;
 
+enum publishers_code {
+	BG_GEOPOSE,
+	WASP_GEOPOSE
+};
+
 class SwmRosInterfaceNodeClass {
 	public:
 		SwmRosInterfaceNodeClass();
@@ -39,7 +44,9 @@ class SwmRosInterfaceNodeClass {
 		ros::NodeHandle _nh;
 		ros::Subscriber subSelfGeopose_;
 		ros::Publisher pubBgGeopose_;
-		std::vector<string> publishers;
+		std::vector<publishers_code> publishers;
+		std::vector<uint16_t> rate_publishers;
+		std::vector<uint16_t> counter_publishers;
 
 		double utcTimeInMiliSec;
 
