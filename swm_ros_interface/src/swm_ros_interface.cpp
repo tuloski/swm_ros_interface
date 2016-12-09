@@ -26,7 +26,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	}
 	//---
 
-	if (_nh.hasParam(nodename + "/sub/bg_geopose")){
+	if (_nh.hasParam(nodename + "/sub/publish_operator_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
 		publishers.push_back(BG_GEOPOSE);
 		rate_publishers.push_back(5);	//rate in Hz at which we want to read from SWM
@@ -34,6 +34,8 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} 
 
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
+
+
 
 	//---SWM
 	ns = ros::this_node::getNamespace();
@@ -66,8 +68,12 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		               			0, 1, 0, 0,
 		               			0, 0, 1, 0,
 		               			0, 0, 0, 1}; // y,x,z,1 remember this is column-major!
-	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
 	
+	string agent_name = "busy_genius";
+	assert(add_agent(self, matrix, 0.0, str2char(agent_name) ));
+	
+
+	cout << "NS: " << ns << endl;
 }
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg){
@@ -80,17 +86,8 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::Geo
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 	
-	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
-
-	cout << "Matrix: " << endl;
-	
-	/*
-	int i=0;
-	cout << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl
-	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl
-	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl	
-	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl;
-	*/
+	string agent_name = "busy_genius";
+	update_pose(self, matrix, utcTimeInMiliSec, str2char(agent_name) );
 }
 
 void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
@@ -112,7 +109,14 @@ void SwmRosInterfaceNodeClass::main_loop()
 
 	ros::Rate r(rate);
 
+	//---msgs
+	geographic_msgs::GeoPose gp;
+	//---
+
 	while( ros::ok() ) {
+
+		ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
+		utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
 
 		counter_print++;
 		for (int i=0; i<publishers.size(); i++){
@@ -122,7 +126,9 @@ void SwmRosInterfaceNodeClass::main_loop()
 			switch (publishers[i]){
 				case BG_GEOPOSE:
 					if (counter_publishers[i] >= rate/rate_publishers[i]){
-						get_position(self, &x, &y, &z, utcTimeInMiliSec, agent_name);
+						string agent_name = "busy_genius";
+						assert( get_position(self, &gp.position.latitude, &gp.position.longitude, &gp.position.altitude, utcTimeInMiliSec, str2char(agent_name) ));		
+						pubBgGeopose_.publish( gp );
 					}
 					break;
 			}
