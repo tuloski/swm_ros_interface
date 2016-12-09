@@ -26,13 +26,12 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	}
 	//---
 
-	if (_nh.hasParam("/swm_interfce/sub/bg_geopose")){
+	if (_nh.hasParam(nodename + "/sub/bg_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
 		publishers.push_back(BG_GEOPOSE);
-		rate_publishers.push_back(10);	//rate in Hz at which we want to read from SWM
+		rate_publishers.push_back(5);	//rate in Hz at which we want to read from SWM
 		counter_publishers.push_back(0);
-	} else {
-	}
+	} 
 
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
@@ -123,8 +122,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 			switch (publishers[i]){
 				case BG_GEOPOSE:
 					if (counter_publishers[i] >= rate/rate_publishers[i]){
-						//TODO poll SWM (we wait to have the function for the full pose)
-						//TODO publish topic
+						get_position(self, &x, &y, &z, utcTimeInMiliSec, agent_name);
 					}
 					break;
 			}
