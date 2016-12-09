@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+
+<launch>
+
+	<node pkg="swm_ros_interface" type="swm_ros_interface" name="swm_ros_interface" output="screen">
+		<param name="sub/publish_operator_geopose" value="true" type="bool" />
+		<param name="pub/publish_operator_geopose" value="true" type="bool" />
+	</node>
+	
+</launch>

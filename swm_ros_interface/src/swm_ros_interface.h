@@ -32,7 +32,7 @@ class SwmRosInterfaceNodeClass {
 	public:
 		SwmRosInterfaceNodeClass();
 		void run();
-		void loop_handle();
+		void main_loop();
 
 		//---Callbacks
 		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);

@@ -13,10 +13,18 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	counter_print = 0;
 	
-	if (_nh.hasParam("/swm_interfce/pub/geopose")){
-		subSelfGeopose_ = _nh.subscribe("geopose", 10, &SwmRosInterfaceNodeClass::readGeopose_publishSwm,this);
-	} else {
+	//---params:
+	// pub: subscription to rostopic, advertising on the SWM
+	// sub: subscription to the SWM, publishing on rostopic
+	//--
+
+	string nodename = ros::this_node::getName();
+	//---publishers (TO SWM)
+	if (_nh.hasParam(nodename + "/pub/publish_operator_geopose")) { //send the position of the bg to the SWM 
+		subSelfGeopose_ = _nh.subscribe("/CREATE/human_pose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm,this);
+		cout << "Subscribing: \t [operator geopose]: /CREATE/human_pose" << endl; 
 	}
+	//---
 
 	if (_nh.hasParam("/swm_interfce/sub/bg_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
@@ -28,7 +36,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
-	// SWM
+	//---SWM
 	ns = ros::this_node::getNamespace();
 	char* pPath;
 	pPath = getenv ("UBX_ROBOTSCENEGRAPH_DIR");
@@ -37,11 +45,9 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
   	exit(0);
   }
   
-  
   string ubx_conf_path(pPath);
 	ubx_conf_path += "/examples/zyre/swm_zyre_config.json"; //the json name could be a param
 	config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
-	
 	
 	if (config == NULL) {
 	  ROS_INFO("Unable to load config");
@@ -52,6 +58,8 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		ROS_INFO("Unable to initialize component");
 		return;
 	}
+	//---
+
 	agent_initialized = false;
 
 	//Initialize agent
@@ -74,6 +82,16 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::Geo
 						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 	
 	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
+
+	cout << "Matrix: " << endl;
+	
+	/*
+	int i=0;
+	cout << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl
+	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl
+	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl	
+	<< matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " "  << matrix[i++] << " " << endl;
+	*/
 }
 
 void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
@@ -90,7 +108,7 @@ void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
 	
 }
 
-void SwmRosInterfaceNodeClass::loop_handle()
+void SwmRosInterfaceNodeClass::main_loop()
 {
 
 	ros::Rate r(rate);
@@ -151,7 +169,7 @@ void SwmRosInterfaceNodeClass::run() {
 	ROS_INFO_ONCE("SIM: RUNNING");
 
 	//start loop handle as a thread. The execution time is specified by rate parameter
-	boost::thread loop_handle_t( &SwmRosInterfaceNodeClass::loop_handle, this);
+	boost::thread loop_handle_t( &SwmRosInterfaceNodeClass::main_loop, this);
 	ros::spin();
 
 }
