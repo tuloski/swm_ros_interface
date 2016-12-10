@@ -129,35 +129,12 @@ void SwmRosInterfaceNodeClass::main_loop()
 						string agent_name = "busy_genius";
 						assert( get_position(self, &gp.position.latitude, &gp.position.longitude, &gp.position.altitude, utcTimeInMiliSec, str2char(agent_name) ));		
 						pubBgGeopose_.publish( gp );
+						counter_publishers[i] = 0;
 					}
 					break;
-			}
-
-							
+			}						
 		}
 	
-		//---Non mi è molto chiara questa parte!! Di che tipo è srv_query?
-		/*if (counter_print>20){
-			std::string query = "query_random";
-			srv_query.request.query = query;
-			srv_query.request.param1 = 1.0;
-			srv_query.request.param2 = 2.0;
-			srv_query.request.param3 = 3.0;
-			srv_query.request.param4 = 4.0;
-			srv_query.request.param5 = 5.0;
-			srv_query.request.param6 = 6.1;
-			srv_query.request.param7 = 7.0;
-			if (client_query.call(srv_query))
-			{
-				ROS_INFO("Query test: %s - %f - %f", srv_query.response.query_answ.c_str(), srv_query.response.answ1, srv_query.response.answ2);
-			}
-			else
-			{
-				ROS_ERROR("Failed to call service query_swm");
-			}
-			counter_print = 0;
-		}*/
-		//----
 
 
 		r.sleep();
