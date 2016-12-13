@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+
+<launch>
+
+	<node pkg="swm_ros_interface" type="swm_ros_interface" name="swm_ros_interface" output="screen">
+		<param name="/swm_interfce/sub/bg_geopose" value="true" type="bool" />
+		<param name="/swm_interfce/pub/wasp_geopose" value="true" type="bool" />
+		<param name="/swm_interfce/pub/wasp_images" value="true" type="bool" />
+	</node>
+	
+</launch>
