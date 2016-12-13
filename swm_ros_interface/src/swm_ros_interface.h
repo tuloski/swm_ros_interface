@@ -9,6 +9,10 @@
 #include <jansson.h>
 #include <uuid/uuid.h>
 #include <string.h>
+#include <sys/time.h>
+
+//UNIBO
+#include "camera_handler_sherpa/Camera.h"
 
 extern "C" {
 	#include "swmzyre.h"
@@ -36,6 +40,8 @@ class SwmRosInterfaceNodeClass {
 
 		//---Callbacks
 		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
+		void readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg);
+		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		//---
 
 	protected:
@@ -43,15 +49,19 @@ class SwmRosInterfaceNodeClass {
 		/*state here*/
 		ros::NodeHandle _nh;
 		ros::Subscriber subSelfGeopose_;
+		ros::Subscriber subWaspGeopose_;
+		ros::Subscriber subWaspCamera_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
 		std::vector<uint16_t> counter_publishers;
 
 		double utcTimeInMiliSec;
+		std::string ns;
+
+		struct timeval tp;
 
 		// swm
-		std::string ns;
 		char config_folder[255];
 		char config_name[];
 		char config_file;

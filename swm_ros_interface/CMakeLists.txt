@@ -7,6 +7,7 @@ project(swm_ros_interface)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  camera_handler_sherpa
 )
 
 ## System dependencies are found with CMake's conventions
