@@ -43,7 +43,7 @@ class SwmRosInterfaceNodeClass {
 		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
 		void readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg);
 		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
-		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg);
+		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg)
 		//---
 
 	protected:

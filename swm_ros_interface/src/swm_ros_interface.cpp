@@ -20,6 +20,14 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	ns = ros::this_node::getNamespace();
 	string nodename = ros::this_node::getName();
 	//---publishers (TO SWM)
+  
+	if (_nh.hasParam(nodename + "/pub/publish_wasp0_geopose")) { //send the position of the bg to the SWM 
+	  subWaspBattery_ = _nh.subscribe("system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
+		cout << "Subscribing: \t [operator geopose]: /CREATE/human_pose" << endl; 
+	}
+
+
+
 	if (_nh.hasParam(nodename + "/pub/publish_operator_geopose")) { //send the position of the bg to the SWM 
 		subSelfGeopose_ = _nh.subscribe("/CREATE/human_pose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm,this);
 		cout << "Subscribing: \t [operator geopose]: /CREATE/human_pose" << endl; 
@@ -47,6 +55,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	//gettimeofday(&tp, NULL);
 
 	//---SWM
+
 	char* pPath;
 	pPath = getenv ("UBX_ROBOTSCENEGRAPH_DIR");
 	if (pPath==NULL) {
@@ -82,6 +91,18 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	
 
 	cout << "NS: " << ns << endl;
+}
+
+// NICOLA
+void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
+	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
+	//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
+	gettimeofday(&tp, NULL);
+	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+	string agent_name = "wasp0";
+  string battery_status = "HIGH";
+  add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(agent_name));
+	// update_pose(self, matrix, utcTimeInMiliSec, str2char(agent_name) );
 }
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg){

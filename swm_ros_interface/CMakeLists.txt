@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   camera_handler_sherpa
+	mms_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -125,7 +126,6 @@ include_directories(
 # )
 
 include_directories( 
-  /home/jcacace/External_SW/ubx_robotscenegraph/examples/zyre/
   ${catkin_INCLUDE_DIRS}
   include
 )
