@@ -55,7 +55,7 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
 		ros::Subscriber subWaspBattery_;
-		ros::Subscriber subWaspArtva_;
+		ros::Subscriber subWaspArtiva_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;

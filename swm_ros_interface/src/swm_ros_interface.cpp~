@@ -33,7 +33,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} //battery
 
 	if (_nh.hasParam(nodename + "/pub/geopose")) { //send the position of the wasp to the SWM 
-		subWaspGeopose_ = _nh.subscribe("/" + ns + "/geopose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp,this);
+		subWaspGeopose_ = _nh.subscribe(ns + "/geopose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" << ns + "/geopose]" << endl; 
 	} //geopose
 
