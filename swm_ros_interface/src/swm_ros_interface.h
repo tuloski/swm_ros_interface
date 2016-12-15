@@ -39,11 +39,11 @@ class SwmRosInterfaceNodeClass {
 		void run();
 		void main_loop();
 
-		//---Callbacks
-		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
+		//---Callbacks		
 		void readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg);
 		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg);
+		void readArtva_publishSwm_wasp(  const mavros::ArtvaRead::ConstPtr& msg );
 		//---
 
 	protected:
@@ -54,6 +54,7 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
 		ros::Subscriber subWaspBattery_;
+		ros::Subscriber subWaspArtiva_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;

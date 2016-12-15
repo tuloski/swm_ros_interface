@@ -2,6 +2,7 @@
 
 using namespace std;
 
+#define default_namespace "/wasp"
 
 char* str2char( string str ) {
 	char *c = new char[ str.length()+1 ];
@@ -18,37 +19,40 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	// sub: subscription to the SWM, publishing on rostopic
 	//--
 	ns = ros::this_node::getNamespace();
-	string nodename = ros::this_node::getName();
+	string nodename = ros::this_node::getName();	
+	if( ns == "/" ) 
+		ns = default_namespace;
+
 	//---publishers (TO SWM)
-  
-	if (_nh.hasParam(nodename + "/pub/publish_wasp0_geopose")) { //send the position of the bg to the SWM 
-	  subWaspBattery_ = _nh.subscribe("system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
-		cout << "Subscribing: \t [operator geopose]: /CREATE/human_pose" << endl; 
-	}
-
-
-
-	if (_nh.hasParam(nodename + "/pub/publish_operator_geopose")) { //send the position of the bg to the SWM 
-		subSelfGeopose_ = _nh.subscribe("/CREATE/human_pose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm,this);
-		cout << "Subscribing: \t [operator geopose]: /CREATE/human_pose" << endl; 
-	}
+	if (_nh.hasParam(nodename + "/pub/publish_geopose")) { //send the position of the bg to the SWM 
+	  	subWaspBattery_ = _nh.subscribe(ns + "/system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
+		cout << "Subscribing: \t [" + ns + "/system_status]" << endl; 
+	} //battery
 
 	if (_nh.hasParam(nodename + "/pub/wasp_geopose")) { //send the position of the wasp to the SWM 
-		subWaspGeopose_ = _nh.subscribe("geopose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp,this);
-		cout << "Subscribing: \t [wasp geopose]" << endl; 
-	}
+		subWaspGeopose_ = _nh.subscribe(ns + "/geopose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp,this);
+		cout << "Subscribing: \t [" << ns + "/geopose]" << endl; 
+	} //geopose
 
 	if (_nh.hasParam(nodename + "/pub/wasp_images")) { //send the images data to the SWM 
-		//subWaspCamera_ = _nh.subscribe("camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
-		cout << "Subscribing: \t [wasp camera]" << endl; 
-	}
+		//subWaspCamera_ = _nh.subscribe(ns + "camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
+		cout << "Subscribing: \t [" << ns + "/camera]" << endl; 
+	} //images
+
+	if( _nh.hasParam(nodename + "/pub/wasp_artva" ) ) {
+		subWaspArtva_ = _nh.subscribe(ns + "/arva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
+		cout << "Subscribing: \t [" << ns + "arva_read" << "]" << endl;
+	} // Artva
 	//---
+
+	//---read from SWM
 	if (_nh.hasParam(nodename + "/sub/publish_operator_geopose")){
-		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
+		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>(ns + "/geopose", 0);
 		publishers.push_back(BG_GEOPOSE);
 		rate_publishers.push_back(5);	//rate in Hz at which we want to read from SWM
 		counter_publishers.push_back(0);
 	} 
+	//---
 
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
@@ -88,38 +92,20 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	
 	//string agent_name = "busy_genius";
 	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
-	
-
-	cout << "NS: " << ns << endl;
 }
 
-// NICOLA
+
+void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(  const mavros::ArtvaRead::ConstPtr& msg ) {
+
+}
+
 void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
-	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
-	//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-	string agent_name = "wasp0";
-  string battery_status = "HIGH";
-  add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(agent_name));
-	// update_pose(self, matrix, utcTimeInMiliSec, str2char(agent_name) );
+	string battery_status = "HIGH";
+  	add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
 }
 
-void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg){
-	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
-	//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
-	gettimeofday(&tp, NULL);
-	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-	double rot_matrix[9];
-	quat2DCM(rot_matrix, msg->orientation);
-	double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
-						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
-						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
-						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
-	
-	string agent_name = "busy_genius";
-	update_pose(self, matrix, utcTimeInMiliSec, str2char(agent_name) );
-}
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
 	gettimeofday(&tp, NULL);
