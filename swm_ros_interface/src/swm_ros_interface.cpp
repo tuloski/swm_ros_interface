@@ -54,8 +54,9 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	bool pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );	
 	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
 	bool pub_artva = 	load_param_bool(false, nodename + "/pub/wasp_artva");
-	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
+	bool pub_sbox_status = load_param_bool( false, nodename + "/pub/sbox_status");
 
+	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
 	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
 	//---
 
@@ -79,7 +80,13 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		subWaspArtva_ = _nh.subscribe("/" + ns + "/artva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" << ns + "artva_read" << "]" << endl;
 	} // Artva
+	if ( pub_sbox_status ) {
+		subSboxStatus_ = _nh.subscribe( "/mavros/sbox_msg_status", 0, &SwmRosInterfaceNodeClass::readSboxStauts_publishSwm_wasp, this );
+	}
+
 	//---
+
+
 
 	//---read from SWM
 	if ( sub_geopose ) {
@@ -119,6 +126,24 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
 }
 
+
+
+void SwmRosInterfaceNodeClass::readSboxStauts_publishSwm_wasp( sbox_msgs::Sbox_msg_status msg ) {
+	
+	sbox_status status;
+	
+	status.idle = msg.idle;
+	status.completed = msg.completed;
+	status.executeId = msg.executeId;
+	status.commandStep = msg.commandStep;
+	status.linActuatorPosition = msg.linActuatorPosition;
+	status.waspDockLeft = msg.waspDockSX;
+	status.waspDockRight = msg.waspDockDX;
+	status.waspLockedLeft = msg.waspLockedSX;
+	status.waspLockedRight = msg.waspLockedDX;
+
+	add_sherpa_box_status(self, status, str2char(ns));
+}
 
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
 	gettimeofday(&tp, NULL);

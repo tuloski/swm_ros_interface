@@ -11,7 +11,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <ros/package.h>
-
+#include <sbox_msgs/Sbox_msg_status.h>
 //UNIBO
 #include <mms_msgs/Sys_status.h>  // Added by NIcola
 #include <mavros/ArtvaRead.h> // Added by NIcola
@@ -46,6 +46,7 @@ class SwmRosInterfaceNodeClass {
 		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg);
 		void readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg);
+		void readSboxStauts_publishSwm_wasp( sbox_msgs::Sbox_msg_status msg );
 		//---
 
 	protected:
@@ -57,6 +58,7 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspCamera_;
 		ros::Subscriber subWaspBattery_;
 		ros::Subscriber subWaspArtva_;
+		ros::Subscriber subSboxStatus_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
