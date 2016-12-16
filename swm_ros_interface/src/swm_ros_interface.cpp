@@ -92,7 +92,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
  
-	std::string conf_path = ros::package::getPath( nodename.substr( 1, nodename.size()-1 ) );  
+	std::string conf_path = ros::package::getPath( "swm_ros_interface" );  
 	string ubx_conf_path = conf_path + "/conf/" + swm_zyre_conf;
 	config = load_config_file(str2char(ubx_conf_path));
 	
@@ -111,9 +111,9 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	//Initialize agent
 	double matrix[16] = { 1, 0, 0, 0,
-		               			0, 1, 0, 0,
-		               			0, 0, 1, 0,
-		               			0, 0, 0, 1}; // y,x,z,1 remember this is column-major!
+		               	  0, 1, 0, 0,
+		               	  0, 0, 1, 0,
+		               	  0, 0, 0, 1}; // y,x,z,1 remember this is column-major!
 	
 	//string agent_name = "busy_genius";
 	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
@@ -124,16 +124,19 @@ void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
-  double rot_matrix[9];
-	quat2DCM(rot_matrix, last_agent_pose.orientation); // TODO
-	double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
-						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
-						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
-						   					last_agent_pose.position.latitude, last_agent_pose.position.longitude, last_agent_pose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
+	artva_measurement artva;
+	artva.signal0 = msg->rec1_distance;
+	artva.signal1 = msg->rec2_distance;
+	artva.signal2 = msg->rec3_distance;
+	artva.signal3 = msg->rec4_distance;
+	artva.angle0 = msg->rec1_direction;
+	artva.angle1 = msg->rec2_direction;
+	artva.angle2 = msg->rec3_direction;
+	artva.angle3 = msg->rec4_direction;
+	add_artva_measurement(self, artva, str2char(ns));
 
-  add_artva(self, matrix, msg->rec1_distance, msg->rec1_direction, msg->rec2_distance, msg->rec2_direction, utcTimeInMiliSec, str2char(ns));
+	/*  add_artva_measurement(self, msg->rec1_distance, msg->rec1_direction, msg->rec2_distance, msg->rec2_direction, msg->rec3_distance, msg->rec3_direction, msg->rec4_distance, msg->rec4_direction, utcTimeInMiliSec, str2char(ns));*/
 }
-
 void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
