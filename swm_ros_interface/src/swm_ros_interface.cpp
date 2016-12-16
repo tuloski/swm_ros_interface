@@ -2,6 +2,29 @@
 
 using namespace std;
 
+bool load_param_bool( bool def, string name ) {
+	bool p;
+	ros::NodeHandle n_param;
+	if (!n_param.getParam (name, p)) {
+		p = def;
+	}
+	cout << name << ": " << "\t" << p << endl;
+
+	return p;
+}
+
+string load_param_string( string def, string name ) {
+	string p;
+	ros::NodeHandle n_param; 
+	if (!n_param.getParam (name, p)) {
+		p = def;
+	}
+	cout << name << ": " << "\t" << p << endl;
+
+	return p;
+}
+
+
 #define default_namespace "/wasp"
 
 char* str2char( string str ) {
@@ -26,63 +49,61 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	//pezzotto, remove the first 2 //
 	ns = ns.substr( 2, ns.size()-1 );
 
+	//---Load params
+	bool pub_geopose = load_param_bool( false, nodename + "/pub/geopose" );	
+	bool pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );	
+	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
+	bool pub_artva = 	load_param_bool(false, nodename + "/pub/wasp_artva");
+	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
+
+	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
+	//---
+
 	//---publishers (TO SWM)
-	if (_nh.hasParam(nodename + "/pub/system_status")) { //send the position of the bg to the SWM 
-	  	subWaspBattery_ = _nh.subscribe(ns + "/system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
+	if (pub_system_status) { //send the position of the bg to the SWM 
+	  	subWaspBattery_ = _nh.subscribe("/" + ns + "/system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" + ns + "/system_status]" << endl; 
 	} //battery
 
-	if (_nh.hasParam(nodename + "/pub/geopose")) { //send the position of the wasp to the SWM 
+	if (pub_geopose) { //send the position of the wasp to the SWM 
 		subWaspGeopose_ = _nh.subscribe("/" + ns + "/geopose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" << ns + "/geopose]" << endl; 
 	} //geopose
 
-	if (_nh.hasParam(nodename + "/pub/wasp_images")) { //send the images data to the SWM 
-		//subWaspCamera_ = _nh.subscribe(ns + "camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
+	if (pub_wasp_images) { //send the images data to the SWM 
+		//subWaspCamera_ = _nh.subscribe("/" + ns + "camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
 		cout << "Subscribing: \t [" << ns + "/camera]" << endl; 
 	} //images
 
-	if( _nh.hasParam(nodename + "/pub/wasp_artva" ) ) {
-		subWaspArtva_ = _nh.subscribe(ns + "/artva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
+	if( pub_artva ) {
+		subWaspArtva_ = _nh.subscribe("/" + ns + "/artva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" << ns + "artva_read" << "]" << endl;
 	} // Artva
 	//---
 
 	//---read from SWM
-	if (_nh.hasParam(nodename + "/sub/geopose")){
-		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>(ns + "/geopose", 0);
+	if ( sub_geopose ) {
+		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/" + ns + "/geopose", 0);
 		publishers.push_back(BG_GEOPOSE);
 		rate_publishers.push_back(5);	//rate in Hz at which we want to read from SWM
 		counter_publishers.push_back(0);
 	} 
 	//---
 
-
 	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
-
-	//gettimeofday(&tp, NULL);
-
-	//---SWM
-
-	char* pPath;
-	pPath = getenv ("UBX_ROBOTSCENEGRAPH_DIR");
-	if (pPath==NULL) {
-  	ROS_ERROR("UBX_ROBOTSCENEGRAPH_DIR env not set!");
-  	exit(0);
-  }
-  
-  string ubx_conf_path(pPath);
-	ubx_conf_path += "/examples/zyre/swm_zyre_config.json"; //the json name could be a param
-	config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
+ 
+	std::string conf_path = ros::package::getPath( nodename.substr( 1, nodename.size()-1 ) );  
+	string ubx_conf_path = conf_path + "/conf/" + swm_zyre_conf;
+	config = load_config_file(str2char(ubx_conf_path));
 	
 	if (config == NULL) {
 	  ROS_INFO("Unable to load config");
-	  return;
+	  exit(0);
 	}	
 	self = new_component(config);
 	if (self == NULL) {
 		ROS_INFO("Unable to initialize component");
-		return;
+		exit(0);
 	}
 	//---
 
@@ -102,15 +123,6 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-
-/*		ARTVAread_msg.rec1_distance = arva_msg.d;
-		ARTVAread_msg.rec1_direction = arva_msg.delta;
-		ARTVAread_msg.rec2_distance = -1;
-		ARTVAread_msg.rec2_direction = 0;
-		ARTVAread_msg.rec3_distance = -1;
-		ARTVAread_msg.rec3_direction = 0;
-		ARTVAread_msg.rec4_distance = -1;
-		ARTVAread_msg.rec4_direction = 0;		*/
 
   double rot_matrix[9];
 	quat2DCM(rot_matrix, last_agent_pose.orientation); // TODO
@@ -133,8 +145,6 @@ void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_s
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
-	//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
 
   last_agent_pose = *msg;
 

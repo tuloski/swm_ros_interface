@@ -10,6 +10,7 @@
 #include <uuid/uuid.h>
 #include <string.h>
 #include <sys/time.h>
+#include <ros/package.h>
 
 //UNIBO
 #include <mms_msgs/Sys_status.h>  // Added by NIcola
@@ -87,4 +88,6 @@ private:
 
 //---helper functions
 void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat);
+std::string load_param_string( string def, string name );
+bool load_param_bool( string def, string name );
 //---
