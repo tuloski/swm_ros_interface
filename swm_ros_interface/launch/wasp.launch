@@ -3,10 +3,11 @@
 <launch>
 
 	<node pkg="swm_ros_interface" type="swm_ros_interface" name="swm_ros_interface" output="screen">
-		<param name="pub/system_status" value="false" type="bool" />
-		<param name="pub/geopose" value="false" type="bool" />
+		<param name="pub/system_status" value="true" type="bool" />
+		<param name="pub/geopose" value="true" type="bool" />
 		<param name="pub/wasp_images" value="false" type="bool" />
 		<param name="pub/wasp_artva" value="true" type="bool" />
+		<param name="pub/victims" value="true" type="bool" />
 		<param name="swm_zyre_conf_file" value="operator_swm_zyre_config.json" type="string" />
 	</node>
 	

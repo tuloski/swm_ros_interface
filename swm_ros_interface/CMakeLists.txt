@@ -137,14 +137,11 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(uav_sim ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
+#SWM_ROS_IF
 add_executable(swm_ros_interface src/swm_ros_interface.cpp)
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-#add_dependencies(swm_ros_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} /usr/local/lib/libswmzyre.so ${catkin_LIBRARIES} )
 
+#SWM TESTBAG
+add_executable(swm_testbag src/testbag/swm_testbag.cpp)
+target_link_libraries(swm_testbag  ${catkin_LIBRARIES} )
 

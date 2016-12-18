@@ -1,3 +1,25 @@
+/****************************************************************************
+ *
+ * swm_ros_interface
+ *
+ * This software was developed at:
+ * PRISMA Lab.
+ * Napoli, Italy
+ *
+ * Description: 
+ *
+ * Authors:
+ * Michele Furci   <michele.furci@unibo.it>
+ * Jonathan Cacace <jonathan.cacace@gmail.com>
+ *
+ * Created in 16/12/2016.
+ *
+ *
+ * Copyright (C) 2016 PRISMA Lab. All rights reserved.
+ *****************************************************************************/
+
+
+
 //ROS
 #include "ros/ros.h"
 #include <tf/transform_broadcaster.h>
@@ -47,6 +69,7 @@ class SwmRosInterfaceNodeClass {
 		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg);
 		void readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg);
 		void readSboxStauts_publishSwm_wasp( sbox_msgs::Sbox_msg_status msg );
+		void readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
 		//---
 
 	protected:
@@ -59,6 +82,7 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspBattery_;
 		ros::Subscriber subWaspArtva_;
 		ros::Subscriber subSboxStatus_;
+		ros::Subscriber subVictims_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
