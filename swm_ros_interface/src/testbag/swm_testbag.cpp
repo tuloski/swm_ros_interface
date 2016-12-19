@@ -56,11 +56,11 @@ void swm_testbag::run() {
 
 	mms_msgs::Sys_status status;
 
-	ros::Rate r(10);
+	ros::Rate r(2);
 
 	double t = 0.0;
 	double step = 1/10.0;
-	double AMP = 0.01;
+	double AMP = 0.18;
 	double TAU = 1/5.0;
 
 	vector < camera_handler_sherpa::Camera > camera_msgs;
@@ -110,6 +110,9 @@ void swm_testbag::run() {
 	bool observation_published = false;
 	status.voltage_battery = 1400;
 
+	int lat = 0;
+	int lon = 0;
+
 	while( ros::ok() ) {
 	
 		double sinu = AMP*sin( TAU*t );
@@ -119,13 +122,18 @@ void swm_testbag::run() {
 		pose.position.altitude = initial_alt;
 
 		/*
-		cout << pose.position.latitude << " " << pose.position.longitude << endl;
+
 		pose.position.latitude = 0.0; //initial_lat + sinu;
 		pose.position.longitude = 0.0; //initial_lon + sinu;
 		pose.position.altitude = 0.0; //initial_alt;
 		*/
-
+		pose.position.latitude = lat++; //initial_lat + sinu;
+		pose.position.longitude = lon++; //initial_lon + sinu;
+		pose.position.altitude = 0.0; //initial_alt;
+		cout << pose.position.latitude << " " << pose.position.longitude << endl;
+		
 		geo_pose_pub.publish( pose );
+	
 	
 		artva.rec1_distance = rand() % 4000;
 		artva.rec1_direction = rand() % 90;
@@ -154,7 +162,7 @@ void swm_testbag::run() {
 			
 		}
 
-
+	
 		r.sleep();
 	}
 }
