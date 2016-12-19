@@ -36,8 +36,8 @@ swm_testbag::swm_testbag() {
 	
 
 	load_param(initial_lat, 44.492423, "initial_lat" );
-	load_param(initial_lat, 11.300068, "initial_lon" );
-	load_param(initial_lat, 150, "initial_alt" );
+	load_param(initial_lon, 11.300068, "initial_lon" );
+	load_param(initial_alt, 150, "initial_alt" );
 
 }
 
@@ -117,6 +117,14 @@ void swm_testbag::run() {
 		pose.position.latitude = initial_lat + sinu;
 		pose.position.longitude = initial_lon + sinu;
 		pose.position.altitude = initial_alt;
+
+		/*
+		cout << pose.position.latitude << " " << pose.position.longitude << endl;
+		pose.position.latitude = 0.0; //initial_lat + sinu;
+		pose.position.longitude = 0.0; //initial_lon + sinu;
+		pose.position.altitude = 0.0; //initial_alt;
+		*/
+
 		geo_pose_pub.publish( pose );
 	
 		artva.rec1_distance = rand() % 4000;

@@ -189,11 +189,10 @@ void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_s
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	string battery_status = "HIGH";
-  add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
+    add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
 }
 
 void SwmRosInterfaceNodeClass::readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg) {
-	cout << "ADDVICTIMSCB" << endl;
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
@@ -222,6 +221,7 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 	
+	cout << "update pose ns: " << ns << endl;
 	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
 }
 
