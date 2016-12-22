@@ -1,27 +1,4 @@
-/****************************************************************************
- *
- * swm_ros_interface
- *
- * This software was developed at:
- * PRISMA Lab.
- * Napoli, Italy
- *
- * Description: 
- *
- * Authors:
- * Michele Furci   <michele.furci@unibo.it>
- * Jonathan Cacace <jonathan.cacace@gmail.com>
- *
- * Created in 16/12/2016.
- *
- *
- * Copyright (C) 2016 PRISMA Lab. All rights reserved.
- *****************************************************************************/
-
-
 #include "swm_ros_interface.h"
-
-#define default_namespace "wasp"
 
 using namespace std;
 
@@ -47,6 +24,9 @@ string load_param_string( string def, string name ) {
 	return p;
 }
 
+
+#define default_namespace "/wasp"
+
 char* str2char( string str ) {
 	char *c = new char[ str.length()+1 ];
 	strcpy( c, str.c_str());
@@ -65,23 +45,27 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	string nodename = ros::this_node::getName();	
 	if( ns == "/" ) 
 		ns = default_namespace;
-	else {
-		//pezzotto, remove the first 2 //
-		ns = ns.substr( 2, ns.size()-1 );
-	}
+
+	//pezzotto, remove the first 2 //
+	ns = ns.substr( 2, ns.size()-1 );
+
 	//---Load params
 	bool pub_geopose = load_param_bool( false, nodename + "/pub/geopose" );	
-	bool pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );	
+	bool pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );
+	bool pub_mms_status = load_param_bool(false, nodename + "/pub/mms_status" );  // Added by NIcola
 	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
 	bool pub_artva = 	load_param_bool(false, nodename + "/pub/wasp_artva");
-	bool pub_sbox_status = load_param_bool( false, nodename + "/pub/sbox_status");
-	bool pub_victims = load_param_bool( false, nodename + "/pub/victims");
-
 	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
+
 	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
 	//---
 
-	//---publishers (TO SWM)
+	//---publishers (TO SWM)  // Added by NIcola
+	if (pub_mms_status) { //send the finite state machine status to the SWM 		  	
+		subWaspMmsStatus_ = _nh.subscribe("/" + ns + "/mms_status", 0, &SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp,this);
+		cout << "Subscribing: \t [" + ns + "/mms_status]" << endl; 
+	} //MMS
+
 	if (pub_system_status) { //send the position of the bg to the SWM 
 	  	subWaspBattery_ = _nh.subscribe("/" + ns + "/system_status", 0, &SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" + ns + "/system_status]" << endl; 
@@ -93,24 +77,15 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} //geopose
 
 	if (pub_wasp_images) { //send the images data to the SWM 
-		subWaspCamera_ = _nh.subscribe("/" + ns + "/camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
-		cout << "Subscribing: \t [" << ns + "/camera_published]" << endl; 
+		//subWaspCamera_ = _nh.subscribe("/" + ns + "camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
+		cout << "Subscribing: \t [" << ns + "/camera]" << endl; 
 	} //images
 
 	if( pub_artva ) {
 		subWaspArtva_ = _nh.subscribe("/" + ns + "/artva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
 		cout << "Subscribing: \t [" << ns + "artva_read" << "]" << endl;
 	} // Artva
-	if ( pub_sbox_status ) {
-		subSboxStatus_ = _nh.subscribe( "/mavros/sbox_msg_status", 0, &SwmRosInterfaceNodeClass::readSboxStauts_publishSwm_wasp, this );
-	}
-	if( pub_victims ) {
-		subVictims_ = _nh.subscribe("/" + ns + "/victims", 0, &SwmRosInterfaceNodeClass::readVictims_publishSwm, this );
-	}
-
 	//---
-
-
 
 	//---read from SWM
 	if ( sub_geopose ) {
@@ -150,25 +125,38 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
 }
 
-
-
-void SwmRosInterfaceNodeClass::readSboxStauts_publishSwm_wasp( sbox_msgs::Sbox_msg_status msg ) {
-	
-	sbox_status status;
-	
-	status.idle = msg.idle;
-	status.completed = msg.completed;
-	status.executeId = msg.executeId;
-	status.commandStep = msg.commandStep;
-	status.linActuatorPosition = msg.linActuatorPosition;
-	status.waspDockLeft = msg.waspDockSX;
-	status.waspDockRight = msg.waspDockDX;
-	status.waspLockedLeft = msg.waspLockedSX;
-	status.waspLockedRight = msg.waspLockedDX;
-
-	add_sherpa_box_status(self, status, str2char(ns));
+ // Added by NIcola
+void SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp(const mms_msgs::MMS_status::ConstPtr& msg){
+	// gettimeofday(&tp, NULL);
+	// utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+	// STATES DEFINITION
+	wasp_flight_status status;
+	if (msg->mms_state < 50)
+			status.flight_state = str2char("ON_GROUND_PROP_OFF");
+	else if (msg->mms_state == 50)
+			status.flight_state = str2char("ON_GROUND_PROP_ON");
+	else
+			status.flight_state = str2char("IN_FLIGHT");
+/*#define ON_GROUND_NO_HOME 10
+	#define SETTING_HOME 20
+	#define ON_GROUND_DISARMED 30
+	#define ARMING 40
+	#define DISARMING 45
+	#define ON_GROUND_ARMED 50
+	#define PERFORMING_TAKEOFF 70
+	#define IN_FLIGHT 80
+	#define GRID 90
+	#define PERFORMING_GO_TO 100
+	#define PERFORMING_LANDING 120
+	#define LEASHING 140
+	#define PAUSED 150
+	#define MANUAL_FLIGHT 1000*/
+  // ROS_WARN("MMS_STATUS %s", status.flight_state);
+		//status.flight_state = msg->mms_state;
+		assert(add_wasp_flight_status(self, status, str2char(ns)));
 }
 
+ // Added by NIcola
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
@@ -184,29 +172,17 @@ void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead
 	artva.angle3 = msg->rec4_direction;
 	add_artva_measurement(self, artva, str2char(ns));
 
+	/*  add_artva_measurement(self, msg->rec1_distance, msg->rec1_direction, msg->rec2_distance, msg->rec2_direction, msg->rec3_distance, msg->rec3_direction, msg->rec4_distance, msg->rec4_direction, utcTimeInMiliSec, str2char(ns));*/
 }
+
+ // Added by NIcola
 void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	string battery_status = "HIGH";
-    add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
+  add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
 }
 
-void SwmRosInterfaceNodeClass::readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg) {
-	gettimeofday(&tp, NULL);
-	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-
-  last_agent_pose = *msg;
-
-	double rot_matrix[9];
-	quat2DCM(rot_matrix, msg->orientation);
-	double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
-						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
-						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
-						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
-
-  add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
-}
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
 	gettimeofday(&tp, NULL);
@@ -221,7 +197,6 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 	
-	cout << "update pose ns: " << ns << endl;
 	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
 }
 
@@ -234,9 +209,7 @@ void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_ha
 						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->geopose.position.latitude, msg->geopose.position.longitude, msg->geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
-	
-	
-	add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo));
+	//assert(add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo)));		TODO uncomment when Sebastian solves
 }
 
 
