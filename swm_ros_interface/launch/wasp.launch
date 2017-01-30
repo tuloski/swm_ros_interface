@@ -7,8 +7,9 @@
 		<param name="pub/geopose" value="true" type="bool" />
 		<param name="pub/wasp_images" value="true" type="bool" />
 		<param name="pub/wasp_artva" value="true" type="bool" />
+		<param name="pub/victims" value="true" type="bool" />
 		<param name="pub/mms_status" value="true" type="bool" /> // add by NIcola
-		<param name="swm_zyre_conf_file" value="swm_zyre_config.json" type="string" />
+		<param name="swm_zyre_conf_file" value="wasp1_swm_zyre_config.json" type="string" />
 	</node>
 	
 </launch>

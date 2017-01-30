@@ -141,23 +141,32 @@ void swm_testbag::run() {
 		artva_pub.publish( artva );
 	
 		status.voltage_battery -= 0.001;
-		
+		if( status.voltage_battery < 10 ) 
+			status.voltage_battery = 1000;
+
 		bat_pub.publish( status );
 		
 		t += step;
 	
 		//after 5 seconds publish victims and pictures	
-		if ( !observation_published && t > 5) {
+		if ( !observation_published) {
 			cout << "Publish observation" << endl;
 			observation_published = true;
-			for(int i=0; i<victims.size(); i++ ) {
+			for(int i=0; i<1; i++ ) {
+				cout << "pubblico" << endl;
 				victims_pub.publish( victims[i] );
 				sleep(1);
 			}
 
-			for(int i=0; i<camera_msgs.size(); i++ ) {
+			for(int i=0; i<1; i++ ) {
 				imgs_pub.publish( camera_msgs[i] );
 				sleep(1);	
+			}
+
+			for(int i=0; i<1; i++ ) {
+				cout << "pubblico" << endl;
+				victims_pub.publish( victims[i] );
+				sleep(1);
 			}
 			
 		}

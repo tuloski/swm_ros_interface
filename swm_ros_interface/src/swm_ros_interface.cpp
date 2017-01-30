@@ -55,6 +55,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	bool pub_mms_status = load_param_bool(false, nodename + "/pub/mms_status" );  // Added by NIcola
 	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
 	bool pub_artva = 	load_param_bool(false, nodename + "/pub/wasp_artva");
+	bool pub_victims = 	load_param_bool(false, nodename + "/pub/victims");
 	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
 
 	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
@@ -77,9 +78,13 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} //geopose
 
 	if (pub_wasp_images) { //send the images data to the SWM 
-		//subWaspCamera_ = _nh.subscribe("/" + ns + "camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
+		subWaspCamera_ = _nh.subscribe("/" + ns + "/camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
 		cout << "Subscribing: \t [" << ns + "/camera]" << endl; 
 	} //images
+
+	if( pub_victims ) {
+		subVictims_ = _nh.subscribe("/" + ns + "/victims", 0, &SwmRosInterfaceNodeClass::readVictims_publishSwm, this );
+	} //victims
 
 	if( pub_artva ) {
 		subWaspArtva_ = _nh.subscribe("/" + ns + "/artva_read", 0, &SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp,this);
@@ -201,6 +206,7 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 }
 
 void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg){
+
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	double rot_matrix[9];
@@ -209,7 +215,24 @@ void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_ha
 						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->geopose.position.latitude, msg->geopose.position.longitude, msg->geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
-	//assert(add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo)));		TODO uncomment when Sebastian solves
+	add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo));
+}
+
+
+void SwmRosInterfaceNodeClass::readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg) {
+    gettimeofday(&tp, NULL);
+    utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+
+  last_agent_pose = *msg;
+
+    double rot_matrix[9];
+    quat2DCM(rot_matrix, msg->orientation);
+    double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+                                               rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
+                                               rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
+                                               msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
+
+  add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
 }
 
 
