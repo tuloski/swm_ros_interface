@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   camera_handler_sherpa
 	mms_msgs
 	mavros
-	sbox_msgs
+# sbox_msgs
 )
 
 ## System dependencies are found with CMake's conventions

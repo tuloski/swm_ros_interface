@@ -55,7 +55,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	bool pub_mms_status = load_param_bool(false, nodename + "/pub/mms_status" );  // Added by NIcola
 	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
 	bool pub_artva = 	load_param_bool(false, nodename + "/pub/wasp_artva");
-	bool sub_geopose = load_param_bool(false, nodename + "/sub/geopose");
+	bool sub_geopose_bg = load_param_bool(false, nodename + "/sub/geopose_bg");
 
 	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
 	//---
@@ -87,9 +87,9 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} // Artva
 	//---
 
-	//---read from SWM
-	if ( sub_geopose ) {
-		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/" + ns + "/geopose", 0);
+	//---read from SWM busy genius geopose
+	if ( sub_geopose_bg ) {
+		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg" + "/geopose", 0);
 		publishers.push_back(BG_GEOPOSE);
 		rate_publishers.push_back(5);	//rate in Hz at which we want to read from SWM
 		counter_publishers.push_back(0);
@@ -122,7 +122,8 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		               	  0, 0, 0, 1}; // y,x,z,1 remember this is column-major!
 	
 	//string agent_name = "busy_genius";
-	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
+	//assert(add_agent(self, matrix, 0.0, str2char(ns) ));
+	add_agent(self, matrix, 0.0, str2char(ns));
 }
 
  // Added by NIcola
@@ -151,10 +152,12 @@ void SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp(const mms_msgs::MMS
 	#define LEASHING 140
 	#define PAUSED 150
 	#define MANUAL_FLIGHT 1000*/
-  // ROS_WARN("MMS_STATUS %s", status.flight_state);
+	ROS_WARN("MMS_STATUS %s", status.flight_state);
 		//status.flight_state = msg->mms_state;
-		assert(add_wasp_flight_status(self, status, str2char(ns)));
+	assert(add_wasp_flight_status(self, status, str2char(ns)));
+	//	add_wasp_flight_status(self, status, str2char(ns));
 }
+
 
  // Added by NIcola
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
@@ -224,7 +227,37 @@ void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
 	rot_matrix[6] = 2*(quat.x*quat.z-quat.w*quat.y);
 	rot_matrix[7] = 2*(quat.y*quat.z+quat.w*quat.x);
 	rot_matrix[8] = 1-2*(quat.x*quat.x+quat.y*quat.y);
-	
+}
+
+void DCM2quat(double (rot_matrix)[9], geometry_msgs::Quaternion *quat){
+	//TODO
+	/*den = np.array([ 1.0 + matrix[0][0] - matrix[1][1] - matrix[2][2],
+	                       1.0 - matrix[0][0] + matrix[1][1] - matrix[2][2],
+	                       1.0 - matrix[0][0] - matrix[1][1] + matrix[2][2],
+	                       1.0 + matrix[0][0] + matrix[1][1] + matrix[2][2]])
+	    max_idx = np.flatnonzero(den == max(den))[0]
+	    q = np.zeros(4)
+	    q[max_idx] = 0.5 * math.sqrt(max(den))
+	    denom = 4.0 * q[max_idx]
+	    if (max_idx == 0):
+	        q[1] =  (matrix[1][0] + matrix[0][1]) / denom
+	        q[2] =  (matrix[2][0] + matrix[0][2]) / denom
+	        q[3] = -(matrix[2][1] - matrix[1][2]) / denom
+	    if (max_idx == 1):
+	        q[0] =  (matrix[1][0] + matrix[0][1]) / denom
+	        q[2] =  (matrix[2][1] + matrix[1][2]) / denom
+	        q[3] = -(matrix[0][2] - matrix[2][0]) / denom
+	    if (max_idx == 2):
+	        q[0] =  (matrix[2][0] + matrix[0][2]) / denom
+	        q[1] =  (matrix[2][1] + matrix[1][2]) / denom
+	        q[3] = -(matrix[1][0] - matrix[0][1]) / denom
+	    if (max_idx == 3):
+	        q[0] = -(matrix[2][1] - matrix[1][2]) / denom
+	        q[1] = -(matrix[0][2] - matrix[2][0]) / denom
+	        q[2] = -(matrix[1][0] - matrix[0][1]) / denom
+	    q_out = Quaternion(q[0],q[1],q[2],q[3])
+	    return q_out*/
+
 }
 
 void SwmRosInterfaceNodeClass::main_loop()
@@ -250,10 +283,22 @@ void SwmRosInterfaceNodeClass::main_loop()
 				case BG_GEOPOSE:
 					if (counter_publishers[i] >= rate/rate_publishers[i]){
 						string agent_name = "busy_genius";
-						double x,y,z;
-						//get_position(self, &gp.position.latitude, &gp.position.longitude, &gp.position.altitude, utcTimeInMiliSec, str2char(agent_name));	
-						//get_position(self, &x, &y, &z, utcTimeInMiliSec, "test");
-						pubBgGeopose_.publish( gp );
+						double transform_matrix[16];
+						geometry_msgs::Quaternion quat = {0,0,0,1};
+						geographic_msgs::GeoPoint geopoint;
+						gettimeofday(&tp, NULL);
+						utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+						get_pose(self, *transform_matrix, utcTimeInMiliSec, str2char(agent_name));
+						double rot_matrix[9] = { transform_matrix[0], transform_matrix[1], transform_matrix[2],
+												 transform_matrix[4], transform_matrix[5], transform_matrix[6],
+												 transform_matrix[8], transform_matrix[9], transform_matrix[10]; // y,x,z,1 remember this is column-major!
+						//DCM2quat(rot_matrix,&quat);
+						geopoint.latitude = transform_matrix[12];
+						geopoint.longitude = transform_matrix[13];
+						geopoint.altitude = transform_matrix[14];
+						gp.orientation = quat;
+						gp.position = geopoint;
+						pubBgGeopose_.publish(gp);
 						counter_publishers[i] = 0;
 					}
 					break;
