@@ -8,8 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   camera_handler_sherpa
-	mms_msgs
-	mavros
+  mms_msgs
+  mavros
 # sbox_msgs
 )
 

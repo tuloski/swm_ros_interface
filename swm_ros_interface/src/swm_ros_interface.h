@@ -47,7 +47,8 @@ class SwmRosInterfaceNodeClass {
 		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		void readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg);
 		void readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg);
-		void readMmsStatus_publishSwm_wasp(const mms_msgs::MMS_status::ConstPtr& msg);	
+		void readMmsStatus_publishSwm_wasp(const mms_msgs::MMS_status::ConstPtr& msg);
+		void readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);	
 		//---
 
 	protected:
@@ -57,6 +58,7 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subSelfGeopose_;
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
+		ros::Subscriber subVictims_;
 		ros::Subscriber subWaspBattery_;  // Added by NIcola
 		ros::Subscriber subWaspMmsStatus_;  // Added by NIcola
 		ros::Subscriber subWaspArtva_;  // Added by NIcola
