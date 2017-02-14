@@ -67,6 +67,17 @@ class SwmRosInterfaceNodeClass {
 		std::vector<uint16_t> rate_publishers;
 		std::vector<uint16_t> counter_publishers;
 
+		bool updated_battery;
+		mms_msgs::Sys_status _sys_status;
+		bool updated_geopose;
+		geographic_msgs::GeoPose _geopose;
+		bool updated_camera;
+		camera_handler_sherpa::Camera _camera;
+		bool updated_victims;
+		geographic_msgs::GeoPose _victims;
+		bool updated_artva;
+		mavros::ArtvaRead _artva;
+
 		double utcTimeInMiliSec;
 		std::string ns;
 

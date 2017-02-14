@@ -3,7 +3,7 @@
     "long-name": "SWM Zyre Client Modlues",
     "type": "msg_example_comp",
     "capabilities": ["send_msg","receive_msg"],
-    "local_endpoint": "ipc:///tmp/wasp107-local",
+    "local_endpoint": "ipc:///tmp/wasp107-swm-ros-interface",
     "EXAMPLE_FOR_GOSSIP: gossip_endpoint": "ipc:///tmp/wasp105-hub",
     "EXAMPLE_FOR_UDP_BEACONING: gossip_endpoint": null,
     "gossip_endpoint": "ipc:///tmp/wasp107-hub",

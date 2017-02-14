@@ -101,7 +101,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	} 
 	//---
 
-	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
+	rate = 50;	//TODO maybe pick rate of node as twice the highest rate of publishers
  
 	std::string conf_path = ros::package::getPath( "swm_ros_interface" );  
 	string ubx_conf_path = conf_path + "/conf/" + swm_zyre_conf;
@@ -166,7 +166,9 @@ void SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp(const mms_msgs::MMS
 
  // Added by NIcola
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
-	gettimeofday(&tp, NULL);
+	updated_artva = true;
+	_artva = *msg;
+	/*gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
 	artva_measurement artva;
@@ -178,22 +180,27 @@ void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead
 	artva.angle1 = msg->rec2_direction;
 	artva.angle2 = msg->rec3_direction;
 	artva.angle3 = msg->rec4_direction;
-	add_artva_measurement(self, artva, str2char(ns));
+	add_artva_measurement(self, artva, str2char(ns));*/
 
 	/*  add_artva_measurement(self, msg->rec1_distance, msg->rec1_direction, msg->rec2_distance, msg->rec2_direction, msg->rec3_distance, msg->rec3_direction, msg->rec4_distance, msg->rec4_direction, utcTimeInMiliSec, str2char(ns));*/
 }
 
  // Added by NIcola
 void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
-	gettimeofday(&tp, NULL);
-	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-	string battery_status = "HIGH";
-  add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
+	updated_battery = true;
+	_sys_status = *msg;
+	//gettimeofday(&tp, NULL);
+	//utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+	//string battery_status = "HIGH";
+  //add_battery(self, msg->voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
 }
 
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
-	gettimeofday(&tp, NULL);
+	_geopose = *msg;
+	updated_geopose = true;
+
+	/*gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
   last_agent_pose = *msg;
@@ -205,12 +212,13 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 	
-	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
+	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );*/
 }
 
 void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg){
-
-	gettimeofday(&tp, NULL);
+	updated_camera = true;
+	_camera = *msg;
+	/*gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	double rot_matrix[9];
 	quat2DCM(rot_matrix, msg->geopose.orientation);
@@ -218,12 +226,14 @@ void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_ha
 						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
 						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 						   					msg->geopose.position.latitude, msg->geopose.position.longitude, msg->geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
-	add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo));
+	add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo));*/
 }
 
 
 void SwmRosInterfaceNodeClass::readVictims_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg) {
-    gettimeofday(&tp, NULL);
+		updated_victims = true;
+		_victims = *msg;
+    /*gettimeofday(&tp, NULL);
     utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
   last_agent_pose = *msg;
@@ -235,7 +245,7 @@ void SwmRosInterfaceNodeClass::readVictims_publishSwm(const geographic_msgs::Geo
                                                rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
                                                msg->position.latitude, msg->position.longitude, msg->position.altitude, 1}; // y,x,z,1 remember this is column-major!
 
-  add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
+  add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));*/
 }
 
 
@@ -294,8 +304,62 @@ void SwmRosInterfaceNodeClass::main_loop()
 
 	while( ros::ok() ) {
 
-		ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
-		utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
+		//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
+		//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
+		gettimeofday(&tp, NULL);
+		utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+
+		if (updated_battery){
+			updated_battery = false;
+			string battery_status = "HIGH";		//TODO
+			add_battery(self, _sys_status.voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
+		}
+		if (updated_geopose){
+			updated_geopose = false;
+			//last_agent_pose = *msg;
+			double rot_matrix[9];
+			quat2DCM(rot_matrix, _geopose.orientation);
+			double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+									 					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
+									 					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
+									 					_geopose.position.latitude, _geopose.position.longitude, _geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
+			update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
+		}
+		if (updated_camera){
+			updated_camera = false;
+			double rot_matrix[9];
+			quat2DCM(rot_matrix, _camera.geopose.orientation);
+			double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+									 					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
+									 					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
+									 					_camera.geopose.position.latitude, _camera.geopose.position.longitude, _camera.geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
+			add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(_camera.path_photo));
+		}
+		if(updated_victims){
+			updated_victims = false;
+			double rot_matrix[9];
+		  quat2DCM(rot_matrix, _victims.orientation);
+		  double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+		                                             rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
+		                                             rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
+		                                             _victims.position.latitude, _victims.position.longitude, _victims.position.altitude, 1}; // y,x,z,1 remember this is column-major!
+
+		add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
+		}
+		if (updated_artva){
+			updated_artva = false;
+			artva_measurement artva;
+			artva.signal0 = _artva.rec1_distance;
+			artva.signal1 = _artva.rec2_distance;
+			artva.signal2 = _artva.rec3_distance;
+			artva.signal3 = _artva.rec4_distance;
+			artva.angle0 = _artva.rec1_direction;
+			artva.angle1 = _artva.rec2_direction;
+			artva.angle2 = _artva.rec3_direction;
+			artva.angle3 = _artva.rec4_direction;
+			add_artva_measurement(self, artva, str2char(ns));
+		}
+		
 
 		counter_print++;
 		for (int i=0; i<publishers.size(); i++){
@@ -316,7 +380,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 						gettimeofday(&tp, NULL);
 						utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 						get_pose(self, transform_matrix, utcTimeInMiliSec, str2char(agent_name));
-						double rot_matrix[9] = { transform_matrix[0], transform_matrix[1], transform_matrix[2],
+						/*double rot_matrix[9] = { transform_matrix[0], transform_matrix[1], transform_matrix[2],
 												 transform_matrix[4], transform_matrix[5], transform_matrix[6],
 												 transform_matrix[8], transform_matrix[9], transform_matrix[10]}; // y,x,z,1 remember this is column-major!
 						//DCM2quat(rot_matrix,&quat);
@@ -324,7 +388,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 						geopoint.longitude = transform_matrix[13];
 						geopoint.altitude = transform_matrix[14];
 						gp.orientation = quat;
-						gp.position = geopoint;
+						gp.position = geopoint;*/
 						pubBgGeopose_.publish(gp);
 						counter_publishers[i] = 0;
 					}
