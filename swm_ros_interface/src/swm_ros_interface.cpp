@@ -136,31 +136,20 @@ void SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp(const mms_msgs::MMS
 	// gettimeofday(&tp, NULL);
 	// utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	// STATES DEFINITION
-	wasp_flight_status status;
+	_status = *msg;
+	updated_status = true;
+
+	/*wasp_flight_status status;
 	if (msg->mms_state < 50)
 			status.flight_state = str2char("ON_GROUND_PROP_OFF");
 	else if (msg->mms_state == 50)
 			status.flight_state = str2char("ON_GROUND_PROP_ON");
 	else
 			status.flight_state = str2char("IN_FLIGHT");
-/*#define ON_GROUND_NO_HOME 10
-	#define SETTING_HOME 20
-	#define ON_GROUND_DISARMED 30
-	#define ARMING 40
-	#define DISARMING 45
-	#define ON_GROUND_ARMED 50
-	#define PERFORMING_TAKEOFF 70
-	#define IN_FLIGHT 80
-	#define GRID 90
-	#define PERFORMING_GO_TO 100
-	#define PERFORMING_LANDING 120
-	#define LEASHING 140
-	#define PAUSED 150
-	#define MANUAL_FLIGHT 1000*/
 	ROS_WARN("MMS_STATUS %s", status.flight_state);
 		//status.flight_state = msg->mms_state;
 	assert(add_wasp_flight_status(self, status, str2char(ns)));
-	//	add_wasp_flight_status(self, status, str2char(ns));
+	//	add_wasp_flight_status(self, status, str2char(ns));*/
 }
 
 
@@ -338,13 +327,12 @@ void SwmRosInterfaceNodeClass::main_loop()
 		if(updated_victims){
 			updated_victims = false;
 			double rot_matrix[9];
-		  quat2DCM(rot_matrix, _victims.orientation);
-		  double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+			quat2DCM(rot_matrix, _victims.orientation);
+			double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
 		                                             rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
 		                                             rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 		                                             _victims.position.latitude, _victims.position.longitude, _victims.position.altitude, 1}; // y,x,z,1 remember this is column-major!
-
-		add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
+			add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
 		}
 		if (updated_artva){
 			updated_artva = false;
@@ -358,6 +346,19 @@ void SwmRosInterfaceNodeClass::main_loop()
 			artva.angle2 = _artva.rec3_direction;
 			artva.angle3 = _artva.rec4_direction;
 			add_artva_measurement(self, artva, str2char(ns));
+		}
+		if (updated_status){
+			wasp_flight_status status;
+			if (_status.mms_state < mms_msgs::MMS_status::ON_GROUND_ARMED)
+					status.flight_state = str2char("ON_GROUND_PROP_OFF");
+			else if (_status.mms_state == mms_msgs::MMS_status::ON_GROUND_ARMED)
+					status.flight_state = str2char("ON_GROUND_PROP_ON");
+			else
+					status.flight_state = str2char("IN_FLIGHT");
+			ROS_WARN("MMS_STATUS %s", status.flight_state);
+			//status.flight_state = msg->mms_state;
+			add_wasp_flight_status(self, status, str2char(ns));
+			//	add_wasp_flight_status(self, status, str2char(ns));
 		}
 		
 

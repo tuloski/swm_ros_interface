@@ -77,6 +77,8 @@ class SwmRosInterfaceNodeClass {
 		geographic_msgs::GeoPose _victims;
 		bool updated_artva;
 		mavros::ArtvaRead _artva;
+		bool updated_status;
+		mms_msgs::MMS_status _status;
 
 		double transform_matrix_bg[16];
 		geographic_msgs::GeoPose _old_geopose_bg;
