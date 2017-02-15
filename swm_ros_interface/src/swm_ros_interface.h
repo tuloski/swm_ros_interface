@@ -78,6 +78,9 @@ class SwmRosInterfaceNodeClass {
 		bool updated_artva;
 		mavros::ArtvaRead _artva;
 
+		double transform_matrix_bg[16];
+		geographic_msgs::GeoPose _old_geopose_bg;
+
 		double utcTimeInMiliSec;
 		std::string ns;
 

@@ -370,26 +370,29 @@ void SwmRosInterfaceNodeClass::main_loop()
 				case BG_GEOPOSE:
 					if (counter_publishers[i] >= rate/rate_publishers[i]){
 						string agent_name = "busy_genius";
-						double transform_matrix[16];
 						geometry_msgs::Quaternion quat;
 						quat.x = 0;
 						quat.y = 0;
 						quat.z = 0;
-						quat.w = 0;
+						quat.w = 1;
 						geographic_msgs::GeoPoint geopoint;
 						gettimeofday(&tp, NULL);
 						utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-						get_pose(self, transform_matrix, utcTimeInMiliSec, str2char(agent_name));
-						/*double rot_matrix[9] = { transform_matrix[0], transform_matrix[1], transform_matrix[2],
-												 transform_matrix[4], transform_matrix[5], transform_matrix[6],
-												 transform_matrix[8], transform_matrix[9], transform_matrix[10]}; // y,x,z,1 remember this is column-major!
+						get_pose(self, transform_matrix_bg, utcTimeInMiliSec, str2char(agent_name));
+						double rot_matrix[9] = { transform_matrix_bg[0], transform_matrix_bg[1], transform_matrix_bg[2],
+												 transform_matrix_bg[4], transform_matrix_bg[5], transform_matrix_bg[6],
+												 transform_matrix_bg[8], transform_matrix_bg[9], transform_matrix_bg[10]}; // y,x,z,1 remember this is column-major!
 						//DCM2quat(rot_matrix,&quat);
-						geopoint.latitude = transform_matrix[12];
-						geopoint.longitude = transform_matrix[13];
-						geopoint.altitude = transform_matrix[14];
+						geopoint.latitude = transform_matrix_bg[12];
+						geopoint.longitude = transform_matrix_bg[13];
+						geopoint.altitude = transform_matrix_bg[14];
 						gp.orientation = quat;
-						gp.position = geopoint;*/
-						pubBgGeopose_.publish(gp);
+						gp.position = geopoint;
+						if ((gp.position.latitude != _old_geopose_bg.position.latitude) || (gp.position.longitude != _old_geopose_bg.position.longitude) || (gp.position.altitude != _old_geopose_bg.position.altitude)){
+							//Publish only if geopose is different, TODO use also attitude
+							_old_geopose_bg = gp;
+							pubBgGeopose_.publish(gp);
+						}
 						counter_publishers[i] = 0;
 					}
 					break;
