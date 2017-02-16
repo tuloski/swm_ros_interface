@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #include <ros/package.h>
 
+#define ARTVA_H_THRESHOLD 600
+
 //UNIBO
 #include <mms_msgs/Sys_status.h>  // Added by NIcola
 #include <mms_msgs/MMS_status.h>  // Added by NIcola
@@ -59,13 +61,21 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
 		ros::Subscriber subVictims_;
-		ros::Subscriber subWaspBattery_;  // Added by NIcola
-		ros::Subscriber subWaspMmsStatus_;  // Added by NIcola
-		ros::Subscriber subWaspArtva_;  // Added by NIcola
+		ros::Subscriber subWaspBattery_;
+		ros::Subscriber subWaspMmsStatus_;
+		ros::Subscriber subWaspArtva_;
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
 		std::vector<uint16_t> counter_publishers;
+
+		bool pub_geopose;
+		bool pub_system_status;
+		bool pub_mms_status;
+		bool pub_wasp_images;
+		bool pub_artva;
+		bool sub_geopose_bg;
+		bool pub_victims;
 
 		bool updated_battery;
 		mms_msgs::Sys_status _sys_status;
@@ -79,6 +89,7 @@ class SwmRosInterfaceNodeClass {
 		mavros::ArtvaRead _artva;
 		bool updated_status;
 		mms_msgs::MMS_status _status;
+		int counter_status;
 
 		double transform_matrix_bg[16];
 		geographic_msgs::GeoPose _old_geopose_bg;

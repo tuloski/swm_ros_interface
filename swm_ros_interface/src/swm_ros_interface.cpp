@@ -36,6 +36,7 @@ char* str2char( string str ) {
 SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	counter_print = 0;
+	counter_status = 0;
 	
 	//---params:
 	// pub: subscription to rostopic, advertising on the SWM
@@ -50,13 +51,13 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	ns = ns.substr( 2, ns.size()-1 );
 
 	//---Load params
-	bool pub_geopose = load_param_bool( false, nodename + "/pub/geopose" );	
-	bool pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );
-	bool pub_mms_status = load_param_bool(false, nodename + "/pub/mms_status" );  // Added by NIcola
-	bool pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );	
-	bool pub_artva = load_param_bool(false, nodename + "/pub/wasp_artva");
-	bool sub_geopose_bg = load_param_bool(false, nodename + "/sub/geopose_bg");
-	bool pub_victims = load_param_bool(false, nodename + "/pub/victims");
+	pub_geopose = load_param_bool( false, nodename + "/pub/geopose" );
+	pub_system_status = load_param_bool(false, nodename + "/pub/system_status" );
+	pub_mms_status = load_param_bool(false, nodename + "/pub/mms_status" );  // Added by NIcola
+	pub_wasp_images = load_param_bool(false, nodename + "/pub/wasp_images" );
+	pub_artva = load_param_bool(false, nodename + "/pub/wasp_artva");
+	sub_geopose_bg = load_param_bool(false, nodename + "/sub/geopose_bg");
+	pub_victims = load_param_bool(false, nodename + "/pub/victims");
 
 	string swm_zyre_conf = load_param_string( "swm_zyre_config.json", nodename + "/swm_zyre_conf_file");
 	//---
@@ -155,8 +156,13 @@ void SwmRosInterfaceNodeClass::readMmsStatus_publishSwm_wasp(const mms_msgs::MMS
 
  // Added by NIcola
 void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead::ConstPtr& msg ) {
-	updated_artva = true;
 	_artva = *msg;
+	if ((_artva.rec1_distance < ARTVA_H_THRESHOLD && _artva.rec1_distance > 0) ||
+		(_artva.rec2_distance < ARTVA_H_THRESHOLD && _artva.rec2_distance > 0) ||
+		(_artva.rec3_distance < ARTVA_H_THRESHOLD && _artva.rec3_distance > 0) ||
+		(_artva.rec4_distance < ARTVA_H_THRESHOLD && _artva.rec4_distance > 0)){
+		updated_artva = true;
+	}
 	/*gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
@@ -298,6 +304,10 @@ void SwmRosInterfaceNodeClass::main_loop()
 		gettimeofday(&tp, NULL);
 		utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 
+		if (pub_system_status){
+			counter_status++;
+		}
+
 		if (updated_battery){
 			updated_battery = false;
 			string battery_status = "HIGH";		//TODO
@@ -324,7 +334,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 									 					_camera.geopose.position.latitude, _camera.geopose.position.longitude, _camera.geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
 			add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(_camera.path_photo));
 		}
-		if(updated_victims){
+		if (updated_victims){
 			updated_victims = false;
 			double rot_matrix[9];
 			quat2DCM(rot_matrix, _victims.orientation);
@@ -337,17 +347,18 @@ void SwmRosInterfaceNodeClass::main_loop()
 		if (updated_artva){
 			updated_artva = false;
 			artva_measurement artva;
-			artva.signal0 = _artva.rec1_distance;
-			artva.signal1 = _artva.rec2_distance;
-			artva.signal2 = _artva.rec3_distance;
-			artva.signal3 = _artva.rec4_distance;
+			artva.signal0 = _artva.rec1_distance < ARTVA_H_THRESHOLD ? _artva.rec1_distance : 0 ;
+			artva.signal1 = _artva.rec2_distance < ARTVA_H_THRESHOLD ? _artva.rec2_distance : 0 ;
+			artva.signal2 = _artva.rec3_distance < ARTVA_H_THRESHOLD ? _artva.rec3_distance : 0 ;
+			artva.signal3 = _artva.rec4_distance < ARTVA_H_THRESHOLD ? _artva.rec4_distance : 0 ;
 			artva.angle0 = _artva.rec1_direction;
 			artva.angle1 = _artva.rec2_direction;
 			artva.angle2 = _artva.rec3_direction;
 			artva.angle3 = _artva.rec4_direction;
 			add_artva_measurement(self, artva, str2char(ns));
 		}
-		if (updated_status){
+		if (counter_status >= rate/1){	//publishing at 1 Hz
+			counter_status = 0;
 			wasp_flight_status status;
 			if (_status.mms_state < mms_msgs::MMS_status::ON_GROUND_ARMED)
 					status.flight_state = str2char("ON_GROUND_PROP_OFF");
@@ -355,7 +366,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 					status.flight_state = str2char("ON_GROUND_PROP_ON");
 			else
 					status.flight_state = str2char("IN_FLIGHT");
-			ROS_WARN("MMS_STATUS %s", status.flight_state);
+			//ROS_WARN("MMS_STATUS %s", status.flight_state);
 			//status.flight_state = msg->mms_state;
 			add_wasp_flight_status(self, status, str2char(ns));
 			//	add_wasp_flight_status(self, status, str2char(ns));
