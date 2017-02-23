@@ -257,7 +257,66 @@ void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
 	rot_matrix[8] = 1-2*(quat.x*quat.x+quat.y*quat.y);
 }
 
-void DCM2quat(double (rot_matrix)[9], geometry_msgs::Quaternion *quat){
+
+
+void DCM2quat(float Rot[3][3], geometry_msgs::Quaternion & quat){
+	
+	float Quat[4];
+	double tr = Rot[0][0]+ Rot[1][1]+ Rot[2][2];
+	int ii;
+	ii=0;
+	if (Rot[1][1] > Rot[0][0]) ii=1;
+	if (Rot[2][2] > Rot[ii][ii]) ii=2;
+	double s;
+	if (tr >= 0){
+		s = sqrt((tr + 1));
+		Quat[0] = s * 0.5;
+		s = 0.5 / s;
+		Quat[1] = (Rot[2][1] - Rot[1][2]) * s;
+		Quat[2] = (Rot[0][2] - Rot[2][0]) * s;
+		Quat[3] = (Rot[1][0] - Rot[0][1]) * s;
+	}
+	else {
+		switch(ii) {
+			case 0:
+				s = sqrt((Rot[0][0]-Rot[1][1]-Rot[2][2]+1));
+				Quat[1] = s * 0.5;
+				s = 0.5 / s;
+				Quat[2] = (Rot[1][0] + Rot[0][1]) * s;//Update pose estimation
+				Quat[3] = (Rot[2][0] + Rot[0][2]) * s;
+				Quat[0] = (Rot[2][1] - Rot[1][2]) * s;
+			break;
+			case 1:
+				s = sqrt((Rot[1][1]-Rot[2][2]-Rot[0][0]+1));
+				Quat[2] = s * 0.5;
+				s = 0.5 / s;
+				Quat[3] = (Rot[2][1] + Rot[1][2]) * s;
+				Quat[1] = (Rot[0][1] + Rot[1][0]) * s;
+				Quat[0] = (Rot[0][2] - Rot[2][0]) * s;
+			break;
+				case 2:
+				s = sqrt((Rot[2][2]-Rot[0][0]-Rot[1][1]+1));
+				Quat[3] = s * 0.5;
+				s = 0.5 / s;
+				Quat[1] = (Rot[0][2] + Rot[2][0]) * s;
+				Quat[2] = (Rot[1][2] + Rot[2][1]) * s;
+				Quat[0] = (Rot[1][0] - Rot[0][1]) * s;
+			break;
+		}
+	}
+	quat.w = Quat[0];
+	quat.x = Quat[1];
+	quat.y = Quat[2];
+	quat.z = Quat[3];
+
+}
+
+
+
+
+
+
+
 	//TODO
 	/*den = np.array([ 1.0 + matrix[0][0] - matrix[1][1] - matrix[2][2],
 	                       1.0 - matrix[0][0] + matrix[1][1] - matrix[2][2],
@@ -286,7 +345,6 @@ void DCM2quat(double (rot_matrix)[9], geometry_msgs::Quaternion *quat){
 	    q_out = Quaternion(q[0],q[1],q[2],q[3])
 	    return q_out*/
 
-}
 
 void SwmRosInterfaceNodeClass::main_loop()
 {
@@ -381,7 +439,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 			switch (publishers[i]){
 				case BG_GEOPOSE:
 					if (counter_publishers[i] >= rate/rate_publishers[i]){
-						string agent_name = "busy_genius";
+						string agent_name = "op0";
 						geometry_msgs::Quaternion quat;
 						quat.x = 0;
 						quat.y = 0;
@@ -394,17 +452,33 @@ void SwmRosInterfaceNodeClass::main_loop()
 						double rot_matrix[9] = { transform_matrix_bg[0], transform_matrix_bg[1], transform_matrix_bg[2],
 												 transform_matrix_bg[4], transform_matrix_bg[5], transform_matrix_bg[6],
 												 transform_matrix_bg[8], transform_matrix_bg[9], transform_matrix_bg[10]}; // y,x,z,1 remember this is column-major!
-						//DCM2quat(rot_matrix,&quat);
+
+						float M[3][3];
+						M[0][0] = rot_matrix[0];
+						M[0][1] = rot_matrix[1];
+						M[0][2] = rot_matrix[2];
+
+						M[1][0] = rot_matrix[3];
+						M[1][1] = rot_matrix[4];
+						M[1][2] = rot_matrix[5];
+
+						M[2][0] = rot_matrix[6];
+						M[2][1] = rot_matrix[7];
+						M[2][2] = rot_matrix[8];
+
+						DCM2quat(M, quat);
+	
+
 						geopoint.latitude = transform_matrix_bg[12];
 						geopoint.longitude = transform_matrix_bg[13];
 						geopoint.altitude = transform_matrix_bg[14];
 						gp.orientation = quat;
 						gp.position = geopoint;
-						if ((gp.position.latitude != _old_geopose_bg.position.latitude) || (gp.position.longitude != _old_geopose_bg.position.longitude) || (gp.position.altitude != _old_geopose_bg.position.altitude)){
+						//if ((gp.position.latitude != _old_geopose_bg.position.latitude) || (gp.position.longitude != _old_geopose_bg.position.longitude) || (gp.position.altitude != _old_geopose_bg.position.altitude)){
 							//Publish only if geopose is different, TODO use also attitude
-							_old_geopose_bg = gp;
+							//_old_geopose_bg = gp; 
 							pubBgGeopose_.publish(gp);
-						}
+						//}
 						counter_publishers[i] = 0;
 					}
 					break;
