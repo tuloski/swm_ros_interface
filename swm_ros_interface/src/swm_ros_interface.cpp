@@ -355,13 +355,21 @@ void SwmRosInterfaceNodeClass::main_loop()
 	geographic_msgs::GeoPose gp;
 	//---
 
+        utcTimeInMiliSec = 1.0;
+
 	while( ros::ok() ) {
 
 		//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
 		//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
 		gettimeofday(&tp, NULL);
-		utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-
+		utcTimeInMiliSec = tp.tv_sec * 1000ULL + tp.tv_usec / 1000ULL; //get current timestamp in milliseconds
+		//utcTimeInMiliSec = 1000.0;
+		if( utcTimeInMiliSec < 0.0 ) {
+			ROS_ERROR("TIME LESS THE Zero!!");
+			r.sleep();
+			continue;
+		}
+		
 		if (pub_system_status){
 			counter_status++;
 		}
@@ -447,7 +455,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 						quat.w = 1;
 						geographic_msgs::GeoPoint geopoint;
 						gettimeofday(&tp, NULL);
-						utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+						utcTimeInMiliSec = tp.tv_sec * 1000ULL + tp.tv_usec / 1000ULL; //get current timestamp in milliseconds
 						get_pose(self, transform_matrix_bg, utcTimeInMiliSec, str2char(agent_name));
 						double rot_matrix[9] = { transform_matrix_bg[0], transform_matrix_bg[1], transform_matrix_bg[2],
 												 transform_matrix_bg[4], transform_matrix_bg[5], transform_matrix_bg[6],
