@@ -79,6 +79,7 @@ class SwmRosInterfaceNodeClass {
 
 		bool updated_battery;
 		mms_msgs::Sys_status _sys_status;
+		int counter_battery;
 		bool updated_geopose;
 		geographic_msgs::GeoPose _geopose;
 		int counter_geopose;

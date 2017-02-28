@@ -38,6 +38,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	counter_print = 0;
 	counter_status = 0;
 	counter_geopose = 0;
+	counter_battery = 0;
 	
 	//---params:
 	// pub: subscription to rostopic, advertising on the SWM
@@ -183,7 +184,11 @@ void SwmRosInterfaceNodeClass::readArtva_publishSwm_wasp(const mavros::ArtvaRead
 
  // Added by NIcola
 void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_status::ConstPtr& msg){
-	updated_battery = true;
+	counter_battery++;
+	if (counter_battery>=10){
+		updated_battery = true;
+		counter_battery = 0;
+	}
 	_sys_status = *msg;
 	//gettimeofday(&tp, NULL);
 	//utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
@@ -383,7 +388,8 @@ void SwmRosInterfaceNodeClass::main_loop()
 		if (updated_battery){
 			updated_battery = false;
 			string battery_status = "HIGH";		//TODO
-			add_battery(self, _sys_status.voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
+			ROS_INFO("SWM_ROS_INTERFACE: Published battery");
+			//add_battery(self, _sys_status.voltage_battery, str2char(battery_status),  utcTimeInMiliSec, str2char(ns));
 		}
 		if (updated_geopose){
 			updated_geopose = false;
@@ -395,6 +401,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 									 					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 									 					_geopose.position.latitude, _geopose.position.longitude, _geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
 			update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
+			ROS_INFO("SWM_ROS_INTERFACE: Published geopose");
 		}
 		if (updated_camera){
 			updated_camera = false;
@@ -405,6 +412,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 									 					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 									 					_camera.geopose.position.latitude, _camera.geopose.position.longitude, _camera.geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
 			add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(_camera.path_photo));
+			ROS_INFO("SWM_ROS_INTERFACE: Published photo");
 		}
 		if (updated_victims){
 			updated_victims = false;
@@ -415,6 +423,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 		                                             rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
 		                                             _victims.position.latitude, _victims.position.longitude, _victims.position.altitude, 1}; // y,x,z,1 remember this is column-major!
 			add_victim(self, matrix, utcTimeInMiliSec, str2char( ns ));
+			ROS_INFO("SWM_ROS_INTERFACE: Published victims");
 		}
 		if (updated_artva){
 			updated_artva = false;
@@ -428,6 +437,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 			artva.angle2 = _artva.rec3_direction;
 			artva.angle3 = _artva.rec4_direction;
 			add_artva_measurement(self, artva, str2char(ns));
+			ROS_INFO("SWM_ROS_INTERFACE: Published artva");
 		}
 		if (counter_status >= rate/1){	//publishing at 1 Hz
 			counter_status = 0;
@@ -442,6 +452,7 @@ void SwmRosInterfaceNodeClass::main_loop()
 			//status.flight_state = msg->mms_state;
 			add_wasp_flight_status(self, status, str2char(ns));
 			//	add_wasp_flight_status(self, status, str2char(ns));
+			ROS_INFO("SWM_ROS_INTERFACE: Published status");
 		}
 		
 
