@@ -81,6 +81,7 @@ class SwmRosInterfaceNodeClass {
 		mms_msgs::Sys_status _sys_status;
 		bool updated_geopose;
 		geographic_msgs::GeoPose _geopose;
+		int counter_geopose;
 		bool updated_camera;
 		camera_handler_sherpa::Camera _camera;
 		bool updated_victims;

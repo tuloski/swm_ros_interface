@@ -37,6 +37,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 
 	counter_print = 0;
 	counter_status = 0;
+	counter_geopose = 0;
 	
 	//---params:
 	// pub: subscription to rostopic, advertising on the SWM
@@ -193,7 +194,12 @@ void SwmRosInterfaceNodeClass::readBattery_publishSwm_wasp(const mms_msgs::Sys_s
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
 	_geopose = *msg;
-	updated_geopose = true;
+	counter_geopose++;
+	if (counter_geopose >=10){
+		updated_geopose = true;
+		counter_geopose = 0;
+	}
+
 
 	/*gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
